@@ -3,3 +3,4 @@ pandas==2.1.1
 numpy==1.26.5
 matplotlib
 seaborn
+streamlit
