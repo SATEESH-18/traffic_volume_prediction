@@ -1,0 +1,16 @@
+# Ignore model files
+*.pkl
+
+# Ignore virtual environment
+venv/
+
+# Ignore notebook checkpoints
+.ipynb_checkpoints/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
