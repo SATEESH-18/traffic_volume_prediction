@@ -1,3 +1,4 @@
+
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -9,9 +10,10 @@ import os
 # DOWNLOAD + LOAD MODEL
 # =========================
 
-MODEL_URL = "https://drive.google.com/uc?export=download&id=1gdhKW9hSPb3EpK_cuMdhlZg-TGHYLegt"  # 🔴 Replace with your ID
-MODEL_PATH = "model.pkl"
+MODEL_URL = "https://drive.google.com/uc?export=download&id=1-sBvUDCuxe3AtFBP64SkZQGLM0tvl3BN"
+MODEL_PATH = "final_traffic_model.pkl"
 
+# Download model if not exists
 if not os.path.exists(MODEL_PATH):
     with st.spinner("Downloading model..."):
         r = requests.get(MODEL_URL)
@@ -20,13 +22,19 @@ if not os.path.exists(MODEL_PATH):
 
 @st.cache_resource
 def load_model():
-    return joblib.load(MODEL_PATH)
+    try:
+        return joblib.load(MODEL_PATH)
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
 model = load_model()
 
 # =========================
 # UI
 # =========================
+
+st.set_page_config(page_title="Traffic Volume Prediction", page_icon="🚦")
 
 st.title("🚦 Traffic Volume Prediction")
 st.markdown("### Predict highway traffic using Machine Learning")
@@ -69,18 +77,20 @@ lag_24 = st.number_input("Traffic 24 hours ago", 0, 10000, 4000)
 # FEATURE ENGINEERING
 # =========================
 
-rolling_mean_3 = np.mean([lag_1, lag_2, lag_24])
+# Correct rolling features (same as training logic)
+rolling_mean_3 = np.mean([lag_1, lag_2])
 rolling_mean_6 = np.mean([lag_1, lag_2, lag_24])
-rolling_std_3 = np.std([lag_1, lag_2, lag_24])
+rolling_std_3 = np.std([lag_1, lag_2])
 
-hour_sin = np.sin(2*np.pi*hour/24)
-hour_cos = np.cos(2*np.pi*hour/24)
+# Cyclical features
+hour_sin = np.sin(2 * np.pi * hour / 24)
+hour_cos = np.cos(2 * np.pi * hour / 24)
 
-month_sin = np.sin(2*np.pi*month/12)
-month_cos = np.cos(2*np.pi*month/12)
+month_sin = np.sin(2 * np.pi * month / 12)
+month_cos = np.cos(2 * np.pi * month / 12)
 
-dow_sin = np.sin(2*np.pi*dayofweek/7)
-dow_cos = np.cos(2*np.pi*dayofweek/7)
+dow_sin = np.sin(2 * np.pi * dayofweek / 7)
+dow_cos = np.cos(2 * np.pi * dayofweek / 7)
 
 is_rush_hour = int(hour in [7, 8, 9, 16, 17, 18])
 
@@ -121,13 +131,19 @@ st.dataframe(input_df)
 # =========================
 
 if st.button("🚀 Predict Traffic Volume"):
-    prediction = model.predict(input_df)[0]
+    if model is not None:
+        try:
+            prediction = model.predict(input_df)[0]
 
-    st.success(f"🚗 Predicted Traffic Volume: {int(prediction)}")
+            st.success(f"🚗 Predicted Traffic Volume: {int(prediction)}")
 
-    if prediction > 5000:
-        st.warning("⚠️ High traffic expected")
-    elif prediction > 3000:
-        st.info("🚦 Moderate traffic")
-    else:
-        st.success("🟢 Smooth traffic")
+            if prediction > 5000:
+                st.warning("⚠️ High traffic expected")
+            elif prediction > 3000:
+                st.info("🚦 Moderate traffic")
+            else:
+                st.success("🟢 Smooth traffic")
+
+        except Exception as e:
+            st.error(f"Prediction failed: {e}")
+
