@@ -1,31 +1,29 @@
-
 import streamlit as st
 import numpy as np
 import pandas as pd
 import joblib
-import requests
 import os
+import gdown   # ✅ NEW
 
 # =========================
 # DOWNLOAD + LOAD MODEL
 # =========================
 
-MODEL_URL = "https://drive.google.com/uc?export=download&id=1-sBvUDCuxe3AtFBP64SkZQGLM0tvl3BN"
+MODEL_URL = "https://drive.google.com/uc?id=1-sBvUDCuxe3AtFBP64SkZQGLM0tvl3BN"
 MODEL_PATH = "final_traffic_model.pkl"
 
-# Download model if not exists
+# ✅ Download model using gdown
 if not os.path.exists(MODEL_PATH):
     with st.spinner("Downloading model..."):
-        r = requests.get(MODEL_URL)
-        with open(MODEL_PATH, "wb") as f:
-            f.write(r.content)
+        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
 
 @st.cache_resource
 def load_model():
     try:
         return joblib.load(MODEL_PATH)
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        import traceback
+        st.text(traceback.format_exc())  # ✅ Better error visibility
         return None
 
 model = load_model()
@@ -77,12 +75,10 @@ lag_24 = st.number_input("Traffic 24 hours ago", 0, 10000, 4000)
 # FEATURE ENGINEERING
 # =========================
 
-# Correct rolling features (same as training logic)
 rolling_mean_3 = np.mean([lag_1, lag_2])
 rolling_mean_6 = np.mean([lag_1, lag_2, lag_24])
 rolling_std_3 = np.std([lag_1, lag_2])
 
-# Cyclical features
 hour_sin = np.sin(2 * np.pi * hour / 24)
 hour_cos = np.cos(2 * np.pi * hour / 24)
 
@@ -146,4 +142,3 @@ if st.button("🚀 Predict Traffic Volume"):
 
         except Exception as e:
             st.error(f"Prediction failed: {e}")
-
